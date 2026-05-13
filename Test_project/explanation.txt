@@ -1,0 +1,316 @@
+=============================================================================
+  HUMANOID PPO — COMPLETE GUIDE
+  Teaching a robot to walk using Reinforcement Learning
+=============================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  WHAT IS THIS?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This project trains a 3D humanoid robot (like a virtual person) to walk and
+eventually run — completely from scratch, with no hand-coded rules.
+
+The robot starts knowing absolutely nothing. It tries random movements,
+falls over, gets penalised, tries again, and slowly figures out how to
+stay upright and move forward. This process is called Reinforcement Learning.
+
+The algorithm used is called PPO (Proximal Policy Optimization), which is
+the same family of algorithm used to train ChatGPT and many real-world robots.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  HOW IT WORKS  (simple version)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Think of it like training a dog:
+
+  1. The robot tries something  →  moves its joints
+  2. The environment gives a reward  →  +5 for staying alive,
+                                        +more for moving forward,
+                                        -a little for wasting energy
+  3. The neural network learns  →  "that movement got reward, do more of it"
+  4. Repeat millions of times  →  robot gradually learns to walk
+
+The "brain" is a small neural network (just 3 layers of math).
+It takes in 348 numbers describing the robot's body (joint angles,
+velocities, forces) and outputs 17 numbers (how hard to push each joint).
+
+Over millions of attempts the network learns: "if my body is tilted like
+this, I should push these joints to correct it."
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  REQUIREMENTS  —  install once
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open a terminal and run:
+
+    pip install "gymnasium[mujoco]" numpy
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  HOW TO RUN  —  step by step
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+─────────────────────────────────────
+  STEP 1 — Delete old checkpoints if and only if want to start new training (not recommended)
+  (only needed first time or if restarting)
+─────────────────────────────────────
+
+    rm -rf checkpoints/
+
+
+─────────────────────────────────────
+  STEP 2 — Start training
+─────────────────────────────────────
+
+    python humanoid_ppo.py
+
+The script starts, confirms your GPU, then begins printing training stats.
+Leave it running. You do NOT see a visual window during training — that is
+normal. Training is silent and fast.
+
+
+─────────────────────────────────────
+  STEP 3 — Watch the robot walk (usually run this if is already trained)
+─────────────────────────────────────
+
+After training for at least 30–60 minutes, open PyCharm and:
+
+  1. Click the dropdown top-right → "Edit Configurations"
+  2. In "Parameters" type:
+         --mode eval --checkpoint checkpoints/best.pt
+  3. Click OK → Run
+
+A MuJoCo window will open showing your humanoid walking in 3D!
+
+Or from terminal:
+    python humanoid_ppo.py --mode eval --checkpoint checkpoints/best.pt
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  HOW TO CONTINUE FROM WHERE YOU STOPPED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If you stopped training (closed PyCharm, restarted PC, etc.) you can
+continue exactly where you left off. The script saves a "latest.pt"
+checkpoint automatically every 10 updates.
+
+To resume:
+
+    python humanoid_ppo.py --resume
+
+Or in PyCharm Edit Configurations → Parameters:
+
+    --resume
+
+The script will print:
+    ✅ Resumed from update 240, step 12,582,912
+
+Training continues from that exact point. No progress is lost.
+
+IMPORTANT: Do NOT delete the checkpoints/ folder if you want to resume.
+           Only delete it when starting completely fresh.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  WATCHING THE ROBOT  —  all options
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Watch best saved agent (opens 3D window):
+    python humanoid_ppo.py --mode eval
+
+Watch a specific checkpoint (e.g. after update 200):
+    python humanoid_ppo.py --mode eval --checkpoint checkpoints/update_00200.pt
+
+Watch 10 episodes instead of 5:
+    python humanoid_ppo.py --mode eval --episodes 10
+
+Watch without a window (just prints stats, useful for servers):
+    python humanoid_ppo.py --mode eval --no-render
+
+The eval output looks like this:
+
+  Checkpoint  : checkpoints/best.pt
+  Trained for : ~28,000,000 steps
+
+    Ep      Return   Steps    Distance  Status
+  ────────────────────────────────────────────────
+     1     5284.12    1000      18.43m  ✅ survived
+     2     4917.88    1000      16.91m  ✅ survived
+     3     5103.44    1000      17.82m  ✅ survived
+
+  Steps = 1000 means the robot walked the full episode without falling.
+  Distance = how many metres it walked forward.
+  Return = total reward collected (higher = better).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  THE MuJoCo 3D VIEWER  —  controls
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When the viewer window opens:
+
+  Left mouse + drag    →  rotate the camera
+  Right mouse + drag   →  zoom in / out
+  Scroll wheel         →  zoom
+  Middle mouse + drag  →  pan the view
+  Space                →  pause / unpause
+  Escape               →  close
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  READING THE TRAINING OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every 10 updates the script prints one line like this:
+
+    240 | 12,582,912 | 5840 sps | Reward 2341.9 | V 118.45 | Ent 22.33 | KL 0.0122 | Clip 0.112 | 33min | 🚶 First walking steps
+
+  240          →  update number (out of ~915 total)
+  12,582,912   →  total environment steps so far
+  5840 sps     →  steps per second (speed of training)
+  Reward 2341  →  average reward last 20 episodes  ← MOST IMPORTANT
+  V 118        →  how well the critic understands the environment
+  Ent 22.33    →  how random the robot's movements are
+  KL 0.0122    →  how much the policy changed this update
+  Clip 0.112   →  fraction of updates that hit the safety boundary
+  33min        →  time elapsed since training started
+  🚶           →  milestone label showing where you are
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TRAINING MILESTONES  —  what to expect
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Time    Reward         Label                    What the robot does
+  ─────────────────────────────────────────────────────────────────────────
+  5 min   300  –  600    📍 Learning to stand     Falls after ~1 second
+  15 min  600  – 1500    📍 Learning to balance   Wobbles, stays up longer
+  35 min  1500 – 3500    🚶 First walking steps   Shuffles, some forward motion
+  60 min  3500 – 6000    🚶 Walking!              Actual walking gait
+  90 min  6000 – 9000    🏃 Walking confidently   Smooth, fast walking
+  2 hrs   8000 +         🏃 Running!              Running gait emerges
+
+NOTE: These are estimates for Ryzen 7 5800H + RTX 3060.
+      The reward does NOT climb smoothly — it will plateau for a while
+      then suddenly jump. This is normal. Be patient.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  HEALTHY vs UNHEALTHY TRAINING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✅ HEALTHY signs:
+      Reward slowly climbing over many updates
+      Entropy between 18 and 25
+      KL between 0.005 and 0.030
+      Clip between 0.05 and 0.20
+      SPS above 3000
+
+  🚨 WARNING signs (the code prints these automatically):
+      Reward flat for 100+ updates        →  something is wrong
+      Entropy below 10                    →  robot stuck in one position
+      Entropy above 28                    →  robot moving randomly, not learning
+      KL above 0.05                       →  learning rate too high
+      Clip above 0.35                     →  learning rate too high
+      SPS below 2000                      →  GPU not being used
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CHECKPOINTS  —  what each file is
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  checkpoints/best.pt              ←  best performance ever achieved
+                                       use this for eval / watching
+
+  checkpoints/latest.pt            ←  most recent save
+                                       use this for resuming training
+
+  checkpoints/update_00200.pt      ←  snapshot at update 200
+                                       useful for comparing progress
+
+  Each checkpoint contains:
+      - Neural network weights (the "brain")
+      - Optimiser state (training momentum)
+      - Observation statistics (normalisation data)
+        ↑ This is CRITICAL — without it the robot falls immediately at eval
+      - Update number and step count
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  QUICK COMMAND REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Start fresh training:
+      rm -rf checkpoints/
+      python humanoid_ppo.py
+
+  Resume training:
+      python humanoid_ppo.py --resume
+
+  Watch best agent walk (with 3D window):
+      python humanoid_ppo.py --mode eval
+
+  Watch specific checkpoint:
+      python humanoid_ppo.py --mode eval --checkpoint checkpoints/update_00500.pt
+
+  Watch 10 episodes:
+      python humanoid_ppo.py --mode eval --episodes 10
+
+  Check GPU is working:
+      python -c "import torch; print(torch.cuda.get_device_name(0))"
+
+  Monitor GPU during training (run in a second terminal):
+      watch -n 2 nvidia-smi
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  COMMON PROBLEMS AND FIXES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Problem: Robot falls immediately during eval
+  Fix:     Your checkpoint is old format (no obs stats).
+           Train fresh with the current code:  rm -rf checkpoints/
+
+  Problem: FileNotFoundError: checkpoints/best.pt
+  Fix:     Training hasn't saved yet. Train for at least 10 minutes first,
+           or use:  checkpoints/latest.pt
+
+  Problem: CUDA not available
+  Fix:     pip install torch --index-url https://download.pytorch.org/whl/cu124
+
+  Problem: SPS below 2000 (too slow)
+  Fix:     GPU not being used. Verify with:
+           python -c "import torch; print(torch.cuda.is_available())"
+
+  Problem: Reward stuck at ~300 for a long time
+  Fix:     Delete checkpoints and retrain:  rm -rf checkpoints/
+
+  Problem: Training was going well, I stopped it, now what?
+  Fix:     Just run:  python humanoid_ppo.py --resume
+           It picks up exactly where you left off.
+
+  Problem: MuJoCo viewer window doesn't open
+  Fix:     Make sure you're NOT using --no-render flag
+           Also check:  pip install "gymnasium[mujoco]"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  HARDWARE BEING USED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CPU  :  AMD Ryzen 7 5800H  (8 cores / 16 threads)
+           Runs the MuJoCo physics simulation
+           12 parallel environments, each on its own thread
+
+  GPU  :  NVIDIA RTX 3060 Laptop  (6 GB VRAM)
+           Runs the neural network forward pass
+           Runs the PPO gradient updates
+           Handles batches of 49,152 samples at a time
+
+  Why both are needed:
+      MuJoCo physics only runs on CPU
+      Neural network training is much faster on GPU
+      The two work in parallel — CPU simulates while GPU trains
+
+=============================================================================
